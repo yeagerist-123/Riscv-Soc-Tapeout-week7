@@ -218,3 +218,47 @@ make DESIGN_CONFIG=./designs/sky130hd/vsdbabysoc/config.mk route
 <img width="1920" height="923" alt="w7-19" src="https://github.com/user-attachments/assets/3fedadc2-8931-4bfe-b8bf-c90b7b8d388b" />
 
 <img width="1920" height="923" alt="w7-20" src="https://github.com/user-attachments/assets/bef3bd33-e9c1-4bce-bf58-3f3c5d9648f6" />
+
+
+
+##  Part 4: What is SPEF?
+
+The final step of the flow, and a key goal of this week, was to generate the **SPEF (Standard Parasitic Exchange Format)** file.
+
+### Why is SPEF so important?
+
+Before routing, our timing analysis (pre-STA) is just an *estimate*. It uses a "Wire Load Model" to guess the resistance (R) and capacitance (C) of the wires that *will* be drawn.
+
+After routing, we have the *actual, physical wires*. The SPEF file contains the **real, extracted parasitic R and C values** for every single net in the design.
+
+**In short: SPEF = Ground Truth.**
+
+When we run our final Static Timing Analysis (known as **post-route STA**), we feed it this SPEF file. This allows the timer to calculate the *actual* delays through the wires. This is the "signoff" analysis that determines if our chip will *really* work at the target frequency.
+
+Without a SPEF file, you're just guessing. With it, you *know*.
+
+- To get the RC extraction and generate a spef file we can use the following tcl script
+
+```
+# Extraction
+
+if { $rcx_rules_file != "" } {
+  define_process_corner -ext_model_index 0 X
+  extract_parasitics -ext_model_file $rcx_rules_file
+
+  set spef_file [make_result_file ${design}_${platform}.spef]
+  write_spef $spef_file
+
+  read_spef $spef_file
+} else {
+  # Use global routing based parasitics inlieu of rc extraction
+  estimate_parasitics -global_routing
+}
+```
+
+
+---
+
+##  Conclusion
+
+The BabySoC physical design flow for Week 7 is complete. The OpenROAD-flow-scripts environment was configured, and the chip was successfully processed through synthesis, floorplanning, placement, CTS, and routing. The primary objective was met with the generation of the post-route SPEF file, capturing the real parasitic data essential for signoff-level timing analysis. This concludes the tasks for Week 7, with Week 8 to follow.
